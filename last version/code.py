@@ -1,117 +1,49 @@
-import pwmio
+from MotorController import Motor
 import board
 import time
-import digitalio
 import usb_cdc
-import busio
-import adafruit_bno055
-import sys
-class MotorController:
-    def __init__(self, tilt, pan, downT, upT, leftP, rightP, sda, scl):
-        # Initialize PWM for pitch/yaw motor
-        self.pc = usb_cdc.data
-        self.i2c = busio.I2C(scl, sda)
-        self.sensor = adafruit_bno055.BNO055_I2C(self.i2c)
-        self.tilt = pwmio.PWMOut(tilt, frequency = 600, duty_cycle = 0)
-        self.pan   = pwmio.PWMOut(pan, frequency = 600, duty_cycle = 0)
-        # Initialize digital output for GP pins
-        self.downT = digitalio.DigitalInOut(downT)
-        self.upT   = digitalio.DigitalInOut(upT)
-        self.leftP = digitalio.DigitalInOut(leftP)
-        self.rightP= digitalio.DigitalInOut(rightP)
-        # Direction Signal
-        self.downT.direction = digitalio.Direction.OUTPUT
-        self.upT.direction = digitalio.Direction.OUTPUT
-        self.leftP.direction = digitalio.Direction.OUTPUT
-        self.rightP.direction = digitalio.Direction.OUTPUT
-        self.pc.write(bytes('hello\n','utf-8'))
-
-        # Initialize last_read_time to store the time of the last read_data() call
-        self.last_read_time = time.time()
-
-
-    def down(self, speed = 0.8, MAX = (2**16) -1):
-        # Set motor direction for pitch up
-        self.upT.value   = True
-        self.downT.value = False
-        # Set pitch motor speed
-        self.tilt.duty_cycle = int(speed * MAX)
-
-    def up(self, speed = 0.4, MAX = (2**16) -1):
-        # Set motor direction for pitch down
-        self.upT.value   = False
-        self.downT.value = True
-        # Set pitch motor speed
-        self.tilt.duty_cycle = int(speed * MAX)
-
-    def right(self, speed = 0.5, MAX = (2**16) -1):
-        # Set motor direction for yaw right
-        self.rightP.value   = True
-        self.leftP.value    = False
-        # Set yaw motor speed
-        self.pan.duty_cycle = int(speed * MAX)
-
-    def left(self, speed = 0.5, MAX = (2**16) -1):
-        # Set motor direction for yaw up
-        self.rightP.value   = False
-        self.leftP.value    = True
-
-        # Set yaw motor speed
-        self.pan.duty_cycle = int(speed * MAX)
-
-    def stop(self):
-        # Stop the motor
-
-        self.tilt.duty_cycle = 0
-        self.pan.duty_cycle   = 0
-
-    def read_angles(self):
-        self.rollA, self.tiltA, self.panA = self.sensor.magnetic
-        return self.tiltA, self.panA
-
-    def read_rates(self):
-        self.roll_rate, self.tilt_rate, self.pan_rate = self.sensor.gyro
-        return self.tilt_rate, self.pan_rate
-
-    def key_commands(self):
-        # Check if keys are being pressed
-        if self.pc.in_waiting > 0:
-            inputs = self.pc.read().strip().decode()
-            if inputs =='w':
-                self.up()
-            elif inputs=='s':
-                self.down()
-            elif inputs=='a':
-                self.left()
-            elif inputs=='d':
-                self.right()
-            elif inputs=='q':
-                sys.exit()
-            else:
-                self.stop()
-        else:
-            self.stop()
+import math
 
 
 
-motor = MotorController(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP13, board.GP6, board.GP7)
+motor = Motor(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP13, board.GP6, board.GP7)
 print('\n\n\n')
-print("\ntime, pan angle, tilt angle, pan rate, tilt rate")
-initialT = time.time()
+
+Kp = .05
+Ki = .01
+Kd = .09
+des_pos = -10 # degrees
+s=1
+
+while s:  # run indefinitely
+    t_start = time.monotonic()  # clock time at start of experiment
+    t_elapsed = 0.0 # variable to represent the elapsed time of the experiment
+    # initial integral of p_error
+    err_int = 0
+    while t_elapsed < 3:
+        motor.data()
+        pan_rate = motor.pan_rate * (180/math.pi)
+        t_elapsed = time.monotonic() - t_start # measure time since start of experiment
+        p_error = des_pos - motor.panA
+        err_der = 0 - pan_rate
+        outspd = Kp*p_error + Ki*err_int + Kd*err_der  # PI_Lead controller
+        print(motor.panA, p_error, outspd)
+        if outspd > 1: # make sure motor input is between [-1,1]
+            outspd = 0.9
+        if outspd < -1:
+            outspd = -0.9
+        if outspd < 0:
+            motor.left(speed=-1*outspd)
+            err_int = err_int + p_error*(time.monotonic()-t_elapsed)
+        if outspd>0:
+            motor.right(speed=outspd)
+            err_int = err_int - p_error*(time.monotonic()-t_elapsed)
+        time.sleep(0.1)
+    print("Finished trial") # let debugging terminal know experiment is done
+    motor.stop()
+    print("finished sending trial data")
+    s=0
 
 
 
-while True:
-    motor.key_commands()
-
-    # Check if 5 seconds have passed since the last read_data() call
-    current_time = time.time()
-    if current_time - motor.last_read_time >= 1:
-        panA, tiltA = motor.read_angles()
-        pan_rate, tilt_rate = motor.read_rates()
-        motor.last_read_time = current_time
-        elapsed_time=motor.last_read_time-initialT
-        print("{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}".format(elapsed_time, panA, tiltA, pan_rate, tilt_rate))
-
-    time.sleep(0.01)
 

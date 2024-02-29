@@ -25,19 +25,18 @@ class MotorController:
         self.upT.direction = digitalio.Direction.OUTPUT
         self.leftP.direction = digitalio.Direction.OUTPUT
         self.rightP.direction = digitalio.Direction.OUTPUT
-        self.pc.write(bytes('hello\n','utf-8'))
+        self.pc.write(bytes('arrows: \n','utf-8'))
         self.MAX = (2**16)-1
         # Initialize last_read_time to store the time of the last read_data() call
         self.initialT = time.monotonic()
+        self.printTime = 0
 
-
-    def down(self, speed = 0.7):
+    def down(self, speed = 0.8):
         # Set motor direction for pitch up
         self.upT.value   = True
         self.downT.value = False
         # Set pitch motor speed
         self.tilt.duty_cycle = int(speed * self.MAX)
-        time.sleep(.1)
 
     def up(self, speed = 0.4):
         # Set motor direction for pitch down
@@ -45,7 +44,6 @@ class MotorController:
         self.downT.value = True
         # Set pitch motor speed
         self.tilt.duty_cycle = int(speed * self.MAX)
-        time.sleep(.1)
 
     def right(self, speed = 0.7):
         # Set motor direction for yaw right
@@ -53,7 +51,6 @@ class MotorController:
         self.leftP.value    = False
         # Set yaw motor speed
         self.pan.duty_cycle = int(speed * self.MAX)
-        time.sleep(.1)
 
     def left(self, speed = 0.7):
         # Set motor direction for yaw up
@@ -61,26 +58,25 @@ class MotorController:
         self.leftP.value    = True
         # Set yaw motor speed
         self.pan.duty_cycle = int(speed * self.MAX)
-        time.sleep(.1)
 
     def stop(self):
         # Stop the motor
-
         self.tilt.duty_cycle = 0
         self.pan.duty_cycle   = 0
 
-        time.sleep(.1)
+    def print_data(self, incTime = 0.1):
+        self.elapsed_time = round(time.monotonic() - self.initialT,2)
 
-    def print_data(self):
-        self.rollA, self.panA, self.tiltA = self.sensor.magnetic
-        self.roll_rate, self.tilt_rate, self.pan_rate = self.sensor.gyro
-        elapsed_time = time.monotonic() - self.initialT
-        print("{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}".format(elapsed_time, self.panA, self.tiltA, self.rollA, self.pan_rate, self.tilt_rate, self.roll_rate))
-
-    def key_commands(self):
+        if self.elapsed_time - self.printTime >= incTime:
+            self.tiltA, self.panA, self.rollA = self.sensor.magnetic
+            self.roll_rate, self.tilt_rate, self.pan_rate = self.sensor.gyro
+            print("{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}".format(self.elapsed_time, self.panA, self.tiltA, self.rollA, self.pan_rate, self.tilt_rate, self.roll_rate))
+            self.printTime = self.elapsed_time
+    def read_keys(self):
         # Check if keys are being pressed
+        #self.pc.flush()
         if self.pc.in_waiting > 0:
-            inputs = self.pc.read().strip().decode()
+            inputs = self.pc.read(1).strip().decode()
             if inputs =='w':
                 self.up()
             elif inputs=='s':
@@ -96,19 +92,25 @@ class MotorController:
         else:
             self.stop()
 
-
 motor = MotorController(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP13, board.GP6, board.GP7)
 print('\n\n\n')
 print("\ntime, pan angle, tilt angle, pan rate, tilt rate")
-initialTime = time.time()
-
-
-
+moveTime = time.monotonic() # MIGHT NEED TO ROUNDDDDDDD
+runTime= 0.5
+# THIS CODE IS TO CONSTANTLY MOVE THE MOTOR AFTER 0.2 SECONDS
+# IT WILL PRINT DATA EVERY 0.5 SECONDS
+# USER MUST STOP CODE CTRL+C
+motor.print_data(incTime=0)
+time.sleep(0.1)
+motor.print_data(incTime=0.1)
 while True:
-    motor.key_commands()
-    # Check if 5 seconds have passed since the last read_data() call
-    current_time = time.time()
-    if current_time - motor.last_read_time >= 1:
-        motor.print_data()
-    time.sleep(0.01)
-
+    current_time = time.monotonic() # read time right now
+    while round(time.monotonic()-current_time,2) <= runTime: #execute move for seconds
+        motor.down(speed=1) # move motor
+        motor.print_data(incTime=0.01) #print data to screen at default incTime = 0.1 second increments
+        time.sleep(0.01)
+    current_time = time.monotonic() # read time right now
+    while round(time.monotonic()-current_time,2) <= runTime: #execute move for seconds
+        motor.up(speed=1) # move motor
+        motor.print_data(incTime=0.1) #print data to screen at default incTime = 0.1 second increments
+        time.sleep(0.01)

@@ -99,16 +99,57 @@ class MotorController:
 
 motor = MotorController(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP13, board.GP6, board.GP7)
 print('\n\n\n')
+
+for i in range(2):
+    motor.right()
+    time.sleep(.1)
+    motor.left()
+    time.sleep(.1)
+    motor.stop()
+    time.sleep(1)
+time.sleep(2)
+
 print("\ntime, pan angle, tilt angle, pan rate, tilt rate")
-initialTime = time.time()
+# Loop for 4 iterations
 
+#for i in range(4):
+#    start_time = time.monotonic()
+#    while time.monotonic() - start_time <= 2:
+#        motor.stop()
+#        motor.print_data()
 
+#    start_time=time.monotonic()
+#    while time.monotonic() - start_time <= 1:
+#        motor.print_data()
+#        motor.right()
 
-while True:
-    motor.key_commands()
-    # Check if 5 seconds have passed since the last read_data() call
-    current_time = time.time()
-    if current_time - motor.last_read_time >= 1:
+#    start_time = time.monotonic()
+#    while time.monotonic() - start_time <= 2:
+#        motor.stop()
+#        motor.print_data()
+
+#    start_time = time.monotonic()
+#    while time.monotonic() - start_time <= 1:
+#        motor.print_data()
+#        motor.left()
+#motor.stop()
+for i in range(5):
+    start_time = time.monotonic()
+    while time.monotonic() - start_time <= 2:
+        motor.stop()
         motor.print_data()
-    time.sleep(0.01)
 
+    start_time=time.monotonic()
+    while time.monotonic() - start_time <= 2:
+        motor.print_data()
+        motor.left()
+
+    start_time = time.monotonic()
+    while time.monotonic() - start_time <= 2:
+        motor.stop()
+        motor.print_data()
+
+    start_time = time.monotonic()
+    while time.monotonic() - start_time <= 2:
+        motor.print_data()
+        motor.right()
