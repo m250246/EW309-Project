@@ -10,3 +10,6 @@ motor = Motor(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP
 print('\n\n\n')
 
 
+while True:
+    motor.read_keys()
+    time.sleep(0.01)
