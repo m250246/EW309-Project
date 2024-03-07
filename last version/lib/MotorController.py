@@ -8,25 +8,32 @@ import adafruit_bno055
 import sys
 
 class Motor:
-    def __init__(self, tilt, pan, downT, upT, leftP, rightP, sda, scl):
+    def __init__(self, tilt, pan, downT, upT, leftP, rightP, sda, scl, shooter, feeder):
         # Initialize PWM for pitch/yaw motor
         self.pc = usb_cdc.data
         self.i2c = busio.I2C(scl, sda)
         self.sensor = adafruit_bno055.BNO055_I2C(self.i2c)
         self.tilt = pwmio.PWMOut(tilt, frequency = 1000, duty_cycle = 0)
         self.pan   = pwmio.PWMOut(pan, frequency = 1000, duty_cycle = 0)
+
+        self.shoot = digitalio.DigitalInOut(shooter)
+        self.feed = digitalio.DigitalInOut(feeder)
+
         # Initialize digital output for GP pins
         self.downT = digitalio.DigitalInOut(downT)
         self.upT   = digitalio.DigitalInOut(upT)
         self.leftP = digitalio.DigitalInOut(leftP)
         self.rightP= digitalio.DigitalInOut(rightP)
+
         # Direction Signal
         self.downT.direction = digitalio.Direction.OUTPUT
         self.upT.direction = digitalio.Direction.OUTPUT
         self.leftP.direction = digitalio.Direction.OUTPUT
         self.rightP.direction = digitalio.Direction.OUTPUT
+        self.shoot.direction = digitalio.Direction.OUTPUT
+        self.feed.direction = digitalio.Direction.OUTPUT
         #self.pc.write(bytes('arrows: \n','utf-8'))
-        #self.pc.write(bytes('arrows: \n','utf-8'))
+
         self.MAX = (2**16)-1
         # Initialize last_read_time to store the time of the last read_data() call
         self.initialT = time.monotonic()
