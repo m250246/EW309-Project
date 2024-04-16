@@ -9,14 +9,11 @@ import math
 motor = Motor(board.GP8, board.GP11, board.GP10, board.GP9, board.GP12, board.GP13, board.GP6, board.GP7, board.GP15, board.GP14)
 print('\n\n\n')
 
-#Kp = 1.8
-#Ki = .01
-#Kd = .01
 Kp = 1.8
 Ki = .01
 Kd = .01
-des_pos = 25*(math.pi/180) # degrees
-s=1
+des_pos = -25*(math.pi/180) # degrees
+
 dz=0.17
 
 t_start = time.monotonic()  # clock time at start of experiment
@@ -26,11 +23,12 @@ t_prev = 0
 errI = 0
 while t_elapsed < 3:
     motor.data()
-    panA = motor.panA*(math.pi/180)
+    panA = motor.panA*(math.pi/180) # degrees to radians
     t_elapsed = time.monotonic() - t_start # measure time since start of experiment
     errP = des_pos - panA
     errD = 0 - motor.pan_rate
-    outspd = Kp*errP + Ki*errI + Kd*errD  # PI_Lead controller
+    outspd = Kp*errP + Ki*errI + Kd*errD  # PID controller
+
     if outspd > 0:
         outspd += dz
     if outspd < 0:

@@ -1,7 +1,8 @@
 clear;
 clc;
 close all;
-load TF_parameters.mat
+%%
+load("TF_parameters.mat")
 
 %% Position TF
 Gsys = TF_PAN_LR;

@@ -54,11 +54,6 @@ ylabel('Angular Speed (rad/s)')
 title('Transfer Function: RIGHT')
 TF_PAN_LR = Gtf
 
-
-
-
-
-
 %% UP DATA
 turret_data = readtable('data/up.log');
 turret_data = table2array(turret_data);
@@ -107,7 +102,7 @@ tiltRate = abs(turret_data(88:210,6));
 % title('Pan Rate')
 ssH = mean(tiltRate(10:end));
 [val,idx]=min(abs(tiltRate-(.63*ssH)));
-tconst = time(idx); % NOTE: 
+tconst = time(idx)/1.5; % NOTE: 
 %% First Order Transfer Function
 v=1;
 s = tf('s');

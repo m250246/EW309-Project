@@ -22,7 +22,7 @@ function [K,Gc,sd,T, z_PIL, p_lead] = PI_lead(G,PO,ts)
     p_lead = -real(sd)+wd/tan(deg2rad(theta_p));
     
     s=zpk('s');
-    Gc = (s+z_PIL)^2/(s*(s+p_lead));
+    Gc = minreal((s+z_PIL)^2/(s*(s+p_lead)));
     %Gc=((s+z_PIL)*(s+z1))/(s*(s+p_lead));
     K=1/(abs(evalfr(Gc,sd))*abs(evalfr(G,sd)));
     T = minreal(K*Gc*G/(1+K*Gc*G));
